@@ -1,11 +1,11 @@
 from typing import Generator
 from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from backend.app.config import get_settings
 
 settings = get_settings()
 
-# Engine creation with dialect specific adjustments
 connect_args = {}
 if "sqlite" in settings.DATABASE_URL:
     connect_args["check_same_thread"] = False
@@ -17,14 +17,15 @@ engine = create_engine(
     echo=settings.DEBUG
 )
 
-# Enforce SQLite foreign keys and WAL mode for reliability and concurrency
-if "sqlite" in settings.DATABASE_URL:
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enforce foreign key integrity on all SQLite connections."""
+    try:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.execute("PRAGMA journal_mode=WAL")
         cursor.close()
+    except Exception:
+        pass
 
 SessionLocal = sessionmaker(
     autocommit=False,

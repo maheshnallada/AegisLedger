@@ -21,3 +21,4 @@ class PaginatedResponse(BaseModel, Generic[T]):
             total_pages=total_pages,
             items=items
         )
+

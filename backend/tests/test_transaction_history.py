@@ -81,3 +81,4 @@ def test_get_history_non_existent_account(client):
     res = client.get("/api/v1/accounts/non-existent-account-id/transactions")
     assert res.status_code == 404
     assert res.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+

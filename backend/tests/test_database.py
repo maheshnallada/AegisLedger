@@ -24,3 +24,4 @@ def test_domain_exceptions_structure():
     assert exc.code == "INSUFFICIENT_FUNDS"
     assert "100" in exc.message
     assert exc.details["current_balance"] == 100.0
+

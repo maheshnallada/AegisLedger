@@ -31,3 +31,4 @@ class AccountBalanceResponse(BaseModel):
     created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+

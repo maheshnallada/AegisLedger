@@ -135,3 +135,4 @@ def test_transaction_non_existent_account(client):
     })
     assert res.status_code == 404
     assert res.json()["error"]["code"] == "ACCOUNT_NOT_FOUND"
+

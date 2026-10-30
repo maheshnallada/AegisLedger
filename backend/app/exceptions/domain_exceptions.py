@@ -53,3 +53,4 @@ class SelfTransferException(LedgerDomainException):
             status_code=400,
             details={"account_id": account_id}
         )
+

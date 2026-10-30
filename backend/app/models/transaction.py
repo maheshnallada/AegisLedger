@@ -27,3 +27,4 @@ class Transaction(Base):
 
     def __repr__(self) -> str:
         return f"<Transaction id={self.id} account_id={self.account_id} type={self.type} amount={self.amount} ref={self.reference_id}>"
+

@@ -21,3 +21,4 @@ class Account(Base):
 
     def __repr__(self) -> str:
         return f"<Account id={self.id} name={self.name} balance={self.balance}>"
+

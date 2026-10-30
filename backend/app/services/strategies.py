@@ -39,3 +39,4 @@ class StrategyFactory:
         if not strategy:
             raise ValueError(f"No posting strategy found for transaction type: {tx_type}")
         return strategy
+

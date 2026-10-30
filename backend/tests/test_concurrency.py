@@ -128,3 +128,4 @@ def test_concurrent_bidirectional_transfers_no_deadlock(client):
     bal_b = client.get(f"/api/v1/accounts/{acc_b}/balance").json()
     assert Decimal(str(bal_a["balance"])) == Decimal("200.0000")
     assert Decimal(str(bal_b["balance"])) == Decimal("200.0000")
+

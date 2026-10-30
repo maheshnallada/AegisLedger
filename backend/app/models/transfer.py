@@ -26,3 +26,4 @@ class Transfer(Base):
 
     def __repr__(self) -> str:
         return f"<Transfer id={self.id} from={self.source_account_id} to={self.destination_account_id} amount={self.amount}>"
+

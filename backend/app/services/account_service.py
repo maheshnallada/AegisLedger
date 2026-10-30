@@ -43,3 +43,4 @@ class AccountService:
     @staticmethod
     def list_accounts(db: Session, skip: int = 0, limit: int = 100) -> List[Account]:
         return db.query(Account).order_by(Account.created_at.desc()).offset(skip).limit(limit).all()
+

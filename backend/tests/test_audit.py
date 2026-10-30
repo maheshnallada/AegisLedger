@@ -64,3 +64,4 @@ def test_validation_error_format(client):
     assert err["success"] is False
     assert err["error"]["code"] == "VALIDATION_ERROR"
     assert "name" in str(err["error"]["details"])
+

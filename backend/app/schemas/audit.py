@@ -12,3 +12,4 @@ class AuditResponse(BaseModel):
     total_transactions: int
 
     model_config = ConfigDict(from_attributes=True)
+

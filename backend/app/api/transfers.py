@@ -15,3 +15,4 @@ def transfer_money(transfer_in: TransferCreate, db: Session = Depends(get_db)):
     - If either part fails, entire operation rolls back.
     """
     return LedgerService.execute_transfer(db, transfer_in)
+

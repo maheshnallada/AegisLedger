@@ -24,3 +24,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Singleton pattern for application configuration."""
     return Settings()
+

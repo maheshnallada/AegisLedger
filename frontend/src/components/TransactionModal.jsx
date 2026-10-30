@@ -196,3 +196,4 @@ export default function TransactionModal({ isOpen, onClose, account, onRecorded 
     </div>
   );
 }
+

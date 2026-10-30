@@ -65,3 +65,4 @@ export default function Navbar({ onRefresh }) {
     </header>
   );
 }
+

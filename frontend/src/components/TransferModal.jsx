@@ -192,3 +192,4 @@ export default function TransferModal({ isOpen, onClose, accounts, currentAccoun
     </div>
   );
 }
+

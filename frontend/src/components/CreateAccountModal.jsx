@@ -99,3 +99,4 @@ export default function CreateAccountModal({ isOpen, onClose, onCreated }) {
     </div>
   );
 }
+

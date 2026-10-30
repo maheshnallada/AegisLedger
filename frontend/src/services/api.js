@@ -1,4 +1,6 @@
-const API_BASE = '/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE = `${BASE_URL}/api/v1`;
+const HEALTH_URL = `${BASE_URL}/health`;
 
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));
@@ -17,7 +19,7 @@ async function handleResponse(res) {
 export const api = {
   // Health
   async getHealth() {
-    const res = await fetch('/health');
+    const res = await fetch(HEALTH_URL);
     return handleResponse(res);
   },
 

@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
 from backend.app.schemas.account import AccountCreate, AccountResponse, AccountBalanceResponse
+from backend.app.schemas.audit import AuditResponse
 from backend.app.services.account_service import AccountService
+from backend.app.services.ledger_service import LedgerService
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
@@ -26,3 +28,11 @@ def get_account(account_id: str, db: Session = Depends(get_db)):
 def get_account_balance(account_id: str, db: Session = Depends(get_db)):
     """Fetch the current balance of an account."""
     return AccountService.get_account_balance(db, account_id)
+
+@router.get("/{account_id}/audit", response_model=AuditResponse)
+def reconcile_account(account_id: str, db: Session = Depends(get_db)):
+    """
+    Perform mathematical balance reconciliation against the append-only ledger history.
+    Proves zero balance drift.
+    """
+    return LedgerService.reconcile_account(db, account_id)

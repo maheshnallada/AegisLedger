@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Optional, List
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from backend.app.models.account import Account
@@ -8,6 +9,7 @@ from backend.app.models.transfer import Transfer
 from backend.app.schemas.transaction import TransactionCreate, TransactionResponse, TransactionType
 from backend.app.schemas.transfer import TransferCreate
 from backend.app.schemas.common import PaginatedResponse
+from backend.app.schemas.audit import AuditResponse
 from backend.app.services.strategies import StrategyFactory
 from backend.app.services.account_service import AccountService
 from backend.app.exceptions.domain_exceptions import (
@@ -187,4 +189,41 @@ class LedgerService:
             total_records=total_records,
             page=page,
             limit=limit
+        )
+
+    @staticmethod
+    def reconcile_account(db: Session, account_id: str) -> AuditResponse:
+        """
+        Audit verification: recalculates sum(credits) - sum(debits) from the
+        immutable transaction log and compares it against account.balance.
+        Guarantees zero balance drift.
+        """
+        account = AccountService.get_account_by_id(db, account_id)
+
+        credits = db.query(func.coalesce(func.sum(Transaction.amount), Decimal("0.0000"))).filter(
+            Transaction.account_id == account_id,
+            Transaction.type == "credit"
+        ).scalar() or Decimal("0.0000")
+
+        debits = db.query(func.coalesce(func.sum(Transaction.amount), Decimal("0.0000"))).filter(
+            Transaction.account_id == account_id,
+            Transaction.type == "debit"
+        ).scalar() or Decimal("0.0000")
+
+        count = db.query(Transaction).filter(Transaction.account_id == account_id).count()
+
+        computed_balance = Decimal(str(credits)) - Decimal(str(debits))
+        cached_balance = Decimal(str(account.balance))
+        drift = cached_balance - computed_balance
+        is_reconciled = (drift == Decimal("0.0000"))
+
+        return AuditResponse(
+            account_id=account.id,
+            cached_balance=cached_balance,
+            total_credits=Decimal(str(credits)),
+            total_debits=Decimal(str(debits)),
+            computed_balance=computed_balance,
+            drift=drift,
+            is_reconciled=is_reconciled,
+            total_transactions=count
         )

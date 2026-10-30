@@ -1,46 +1,64 @@
 import os
 import sys
 import pytest
-from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
-# Ensure root is in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from backend.app.database import Base, get_db
 from backend.app.main import app
 
-# Create isolated in-memory SQLite engine for tests with StaticPool
-TEST_DATABASE_URL = "sqlite:///:memory:"
+TEST_DB_FILE = "./test_aegis.db"
+TEST_DATABASE_URL = f"sqlite:///{TEST_DB_FILE}"
 
 test_engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+    connect_args={"check_same_thread": False, "timeout": 30.0},
+    pool_pre_ping=True
 )
 
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine, expire_on_commit=False)
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=test_engine,
+    expire_on_commit=False
+)
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_db():
+    if os.path.exists(TEST_DB_FILE):
+        try:
+            os.remove(TEST_DB_FILE)
+        except Exception:
+            pass
+    Base.metadata.create_all(bind=test_engine)
+    yield
+    Base.metadata.drop_all(bind=test_engine)
+    test_engine.dispose()
+    if os.path.exists(TEST_DB_FILE):
+        try:
+            os.remove(TEST_DB_FILE)
+        except Exception:
+            pass
 
 @pytest.fixture(scope="function")
 def db_session():
-    Base.metadata.create_all(bind=test_engine)
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=test_engine)
 
 @pytest.fixture(scope="function")
-def client(db_session):
+def client():
     def override_get_db():
+        db = TestingSessionLocal()
         try:
-            yield db_session
+            yield db
         finally:
-            pass
+            db.close()
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:

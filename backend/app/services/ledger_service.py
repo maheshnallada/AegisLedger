@@ -1,3 +1,5 @@
+import threading
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional, List
 from sqlalchemy import func
@@ -10,7 +12,6 @@ from backend.app.schemas.transaction import TransactionCreate, TransactionRespon
 from backend.app.schemas.transfer import TransferCreate
 from backend.app.schemas.common import PaginatedResponse
 from backend.app.schemas.audit import AuditResponse
-from backend.app.services.strategies import StrategyFactory
 from backend.app.services.account_service import AccountService
 from backend.app.exceptions.domain_exceptions import (
     AccountNotFoundException,
@@ -19,10 +20,13 @@ from backend.app.exceptions.domain_exceptions import (
     SelfTransferException,
 )
 
+# Concurrency mutex to serialize critical write sections for SQLite (which lacks native row-level locking)
+_sqlite_mutex = threading.RLock()
+
 class LedgerService:
     """
     Facade providing atomic, thread-safe financial ledger operations.
-    Enforces ACID atomicity, deterministic locking order, and idempotency.
+    Enforces ACID atomicity, atomic conditional balance updates, and idempotency.
     """
 
     @staticmethod
@@ -43,45 +47,55 @@ class LedgerService:
     def record_transaction(db: Session, account_id: str, tx_in: TransactionCreate) -> Transaction:
         """
         Atomically records a transaction and mutates account balance.
+        Guarantees:
+        - If reference_id is already used for this account -> 409 DuplicateTransactionException
+        - If debit balance insufficient -> 400 InsufficientBalanceException
+        - Both transaction entry and balance update persist atomically
         """
-        account = LedgerService.get_account_for_update(db, account_id)
+        with _sqlite_mutex:
+            # Step 1: Ensure account exists and lock row
+            account = LedgerService.get_account_for_update(db, account_id)
 
-        # Idempotency check for reference_id within this account
-        existing_tx = db.query(Transaction).filter(
-            Transaction.account_id == account_id,
-            Transaction.reference_id == tx_in.reference_id
-        ).first()
+            # Step 2: Idempotency check for reference_id within this account
+            existing_tx = db.query(Transaction).filter(
+                Transaction.account_id == account_id,
+                Transaction.reference_id == tx_in.reference_id
+            ).first()
 
-        if existing_tx:
-            raise DuplicateTransactionException(account_id, tx_in.reference_id)
-
-        # Compute new balance via Strategy Pattern
-        strategy = StrategyFactory.get_strategy(tx_in.type)
-        new_balance = strategy.calculate_new_balance(account.balance, tx_in.amount)
-
-        # Create immutable Transaction record
-        transaction = Transaction(
-            account_id=account.id,
-            type=tx_in.type.value,
-            amount=tx_in.amount,
-            description=tx_in.description,
-            reference_id=tx_in.reference_id
-        )
-        db.add(transaction)
-
-        # Update account balance
-        account.balance = new_balance
-
-        # Atomic Commit
-        try:
-            db.commit()
-            db.refresh(transaction)
-            return transaction
-        except IntegrityError as e:
-            db.rollback()
-            if "uq_account_reference" in str(e).lower() or "unique" in str(e).lower():
+            if existing_tx:
                 raise DuplicateTransactionException(account_id, tx_in.reference_id)
-            raise
+
+            # Step 3: Check balance sufficiency for debits
+            if tx_in.type == TransactionType.DEBIT:
+                if account.balance < tx_in.amount:
+                    raise InsufficientBalanceException(
+                        current_balance=float(account.balance),
+                        requested_amount=float(tx_in.amount)
+                    )
+                account.balance -= tx_in.amount
+            else:
+                account.balance += tx_in.amount
+
+            # Step 4: Create immutable Transaction record
+            transaction = Transaction(
+                account_id=account.id,
+                type=tx_in.type.value,
+                amount=tx_in.amount,
+                description=tx_in.description,
+                reference_id=tx_in.reference_id
+            )
+            db.add(transaction)
+
+            # Step 5: Atomic Commit
+            try:
+                db.commit()
+                db.refresh(transaction)
+                return transaction
+            except IntegrityError as e:
+                db.rollback()
+                if "uq_account_reference" in str(e).lower() or "unique" in str(e).lower():
+                    raise DuplicateTransactionException(account_id, tx_in.reference_id)
+                raise
 
     @staticmethod
     def execute_transfer(db: Session, transfer_in: TransferCreate) -> Transfer:
@@ -90,73 +104,73 @@ class LedgerService:
         Applies Deterministic Lock Ordering (min(ID_A, ID_B) -> max(ID_A, ID_B))
         to eliminate database deadlocks during concurrent bidirectional transfers.
         """
-        if transfer_in.source_account_id == transfer_in.destination_account_id:
-            raise SelfTransferException(transfer_in.source_account_id)
+        with _sqlite_mutex:
+            if transfer_in.source_account_id == transfer_in.destination_account_id:
+                raise SelfTransferException(transfer_in.source_account_id)
 
-        # Check duplicate transfer reference
-        existing_xfer = db.query(Transfer).filter(Transfer.reference_id == transfer_in.reference_id).first()
-        if existing_xfer:
-            raise DuplicateTransactionException(transfer_in.source_account_id, transfer_in.reference_id)
+            # Check duplicate transfer reference
+            existing_xfer = db.query(Transfer).filter(Transfer.reference_id == transfer_in.reference_id).first()
+            if existing_xfer:
+                raise DuplicateTransactionException(transfer_in.source_account_id, transfer_in.reference_id)
 
-        # Deterministic Lock Ordering
-        first_id, second_id = sorted([transfer_in.source_account_id, transfer_in.destination_account_id])
-        first_acc = LedgerService.get_account_for_update(db, first_id)
-        second_acc = LedgerService.get_account_for_update(db, second_id)
+            # Deterministic Lock Ordering
+            first_id, second_id = sorted([transfer_in.source_account_id, transfer_in.destination_account_id])
+            first_acc = LedgerService.get_account_for_update(db, first_id)
+            second_acc = LedgerService.get_account_for_update(db, second_id)
 
-        src_acc = first_acc if first_acc.id == transfer_in.source_account_id else second_acc
-        dst_acc = second_acc if first_acc.id == transfer_in.source_account_id else first_acc
+            src_acc = first_acc if first_acc.id == transfer_in.source_account_id else second_acc
+            dst_acc = second_acc if first_acc.id == transfer_in.source_account_id else first_acc
 
-        # Verify source balance sufficiency
-        if src_acc.balance < transfer_in.amount:
-            raise InsufficientBalanceException(
-                current_balance=float(src_acc.balance),
-                requested_amount=float(transfer_in.amount)
+            # Check sufficiency
+            if src_acc.balance < transfer_in.amount:
+                raise InsufficientBalanceException(
+                    current_balance=float(src_acc.balance),
+                    requested_amount=float(transfer_in.amount)
+                )
+
+            # Mutate balances
+            src_acc.balance -= transfer_in.amount
+            dst_acc.balance += transfer_in.amount
+
+            # Create corresponding debit transaction for source account
+            debit_tx = Transaction(
+                account_id=src_acc.id,
+                type="debit",
+                amount=transfer_in.amount,
+                description=f"Transfer to {dst_acc.name} ({dst_acc.id[:8]}): {transfer_in.description}",
+                reference_id=f"{transfer_in.reference_id}_DR"
             )
 
-        # Mutate account balances
-        src_acc.balance -= transfer_in.amount
-        dst_acc.balance += transfer_in.amount
+            # Create corresponding credit transaction for destination account
+            credit_tx = Transaction(
+                account_id=dst_acc.id,
+                type="credit",
+                amount=transfer_in.amount,
+                description=f"Transfer from {src_acc.name} ({src_acc.id[:8]}): {transfer_in.description}",
+                reference_id=f"{transfer_in.reference_id}_CR"
+            )
 
-        # Create corresponding debit transaction for source account
-        debit_tx = Transaction(
-            account_id=src_acc.id,
-            type="debit",
-            amount=transfer_in.amount,
-            description=f"Transfer to {dst_acc.name} ({dst_acc.id[:8]}): {transfer_in.description}",
-            reference_id=f"{transfer_in.reference_id}_DR"
-        )
+            # Create Transfer audit record
+            transfer = Transfer(
+                source_account_id=src_acc.id,
+                destination_account_id=dst_acc.id,
+                amount=transfer_in.amount,
+                reference_id=transfer_in.reference_id,
+                description=transfer_in.description
+            )
 
-        # Create corresponding credit transaction for destination account
-        credit_tx = Transaction(
-            account_id=dst_acc.id,
-            type="credit",
-            amount=transfer_in.amount,
-            description=f"Transfer from {src_acc.name} ({src_acc.id[:8]}): {transfer_in.description}",
-            reference_id=f"{transfer_in.reference_id}_CR"
-        )
+            db.add(debit_tx)
+            db.add(credit_tx)
+            db.add(transfer)
 
-        # Create Transfer audit record
-        transfer = Transfer(
-            source_account_id=src_acc.id,
-            destination_account_id=dst_acc.id,
-            amount=transfer_in.amount,
-            reference_id=transfer_in.reference_id,
-            description=transfer_in.description
-        )
-
-        db.add(debit_tx)
-        db.add(credit_tx)
-        db.add(transfer)
-
-        try:
-            db.commit()
-            db.refresh(transfer)
-            return transfer
-        except IntegrityError as e:
-            db.rollback()
-            if "reference" in str(e).lower() or "unique" in str(e).lower():
-                raise DuplicateTransactionException(transfer_in.source_account_id, transfer_in.reference_id)
-            raise
+            try:
+                db.commit()
+                return transfer
+            except IntegrityError as e:
+                db.rollback()
+                if "reference" in str(e).lower() or "unique" in str(e).lower():
+                    raise DuplicateTransactionException(transfer_in.source_account_id, transfer_in.reference_id)
+                raise
 
     @staticmethod
     def get_transaction_history(

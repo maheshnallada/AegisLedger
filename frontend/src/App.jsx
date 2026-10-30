@@ -5,10 +5,18 @@ import CreateAccountModal from './components/CreateAccountModal';
 import TransactionModal from './components/TransactionModal';
 import TransferModal from './components/TransferModal';
 import AuditModal from './components/AuditModal';
+
+// Landing Page Components
+import LandingNavbar from './components/landing/LandingNavbar';
+import HeroSection from './components/landing/HeroSection';
+import ArchitectureSection from './components/landing/ArchitectureSection';
+import BentoFeatures from './components/landing/BentoFeatures';
+import ApiPlayground from './components/landing/ApiPlayground';
+import LandingFooter from './components/landing/LandingFooter';
+
 import {
   Wallet,
   ArrowDownRight,
-  ArrowUpRight,
   ArrowRightLeft,
   ShieldCheck,
   PlusCircle,
@@ -20,6 +28,9 @@ import {
 import { api } from './services/api';
 
 export default function App() {
+  // Navigation view: 'landing' or 'console'
+  const [view, setView] = useState('landing');
+
   const [accounts, setAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -143,9 +154,29 @@ export default function App() {
     }
   };
 
+  // If viewing Landing Page
+  if (view === 'landing') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-sky-500 selection:text-white">
+        <LandingNavbar onLaunchConsole={() => setView('console')} />
+        <main className="flex-1">
+          <HeroSection onLaunchConsole={() => setView('console')} />
+          <ArchitectureSection />
+          <BentoFeatures />
+          <ApiPlayground />
+        </main>
+        <LandingFooter onLaunchConsole={() => setView('console')} />
+      </div>
+    );
+  }
+
+  // If viewing Live Ledger Console
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
-      <Navbar onRefresh={() => loadAccounts()} />
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-sky-500 selection:text-white">
+      <Navbar
+        onRefresh={() => loadAccounts()}
+        onBackToLanding={() => setView('landing')}
+      />
 
       {/* Toast Alert */}
       {toast && (
@@ -204,7 +235,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setIsCreateAccountOpen(true)}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-semibold flex items-center space-x-2 transition-all shadow-sm"
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-semibold flex items-center space-x-2 transition-all shadow-sm cursor-pointer"
             >
               <PlusCircle className="h-4 w-4 text-sky-400" />
               <span>Create Account</span>
@@ -215,7 +246,6 @@ export default function App() {
         {/* Hero Card: Current Balance & Quick Action Buttons */}
         {selectedAccount ? (
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-800/80 p-6 sm:p-8 shadow-2xl">
-            {/* Background Glow */}
             <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -225,7 +255,7 @@ export default function App() {
                   <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Current Balance</span>
                   <button
                     onClick={copyId}
-                    className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                    className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                   >
                     {copiedId ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                     <span>{selectedAccount.id.slice(0, 8)}...</span>
@@ -246,7 +276,7 @@ export default function App() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => setIsTransactionOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-medium text-xs shadow-lg shadow-sky-500/20 flex items-center space-x-2 transition-all active:scale-95"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-medium text-xs shadow-lg shadow-sky-500/20 flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
                 >
                   <ArrowDownRight className="h-4 w-4" />
                   <span>Credit / Debit</span>
@@ -255,7 +285,7 @@ export default function App() {
                 <button
                   onClick={() => setIsTransferOpen(true)}
                   disabled={accounts.length < 2}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-medium text-xs shadow-lg shadow-indigo-600/20 flex items-center space-x-2 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-medium text-xs shadow-lg shadow-indigo-600/20 flex items-center space-x-2 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
                 >
                   <ArrowRightLeft className="h-4 w-4" />
                   <span>Transfer Money</span>
@@ -263,7 +293,7 @@ export default function App() {
 
                 <button
                   onClick={() => setIsAuditOpen(true)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 font-medium text-xs flex items-center space-x-2 transition-all active:scale-95"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 font-medium text-xs flex items-center space-x-2 transition-all active:scale-95 cursor-pointer"
                 >
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
                   <span>Audit & Reconcile</span>
@@ -280,7 +310,7 @@ export default function App() {
             </p>
             <button
               onClick={() => setIsCreateAccountOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium text-xs shadow-lg shadow-sky-500/20 inline-flex items-center space-x-2 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-medium text-xs shadow-lg shadow-sky-500/20 inline-flex items-center space-x-2 transition-all cursor-pointer"
             >
               <PlusCircle className="h-4 w-4" />
               <span>Create First Account</span>
@@ -339,4 +369,3 @@ export default function App() {
     </div>
   );
 }
-

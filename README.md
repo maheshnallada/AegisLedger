@@ -232,3 +232,4 @@ Every error returns a consistent envelope:
 3. **Immutability:** Transactions cannot be updated or deleted via any API endpoint.
 4. **Atomic Transfers:** Money transfers debit source and credit destination as a single ACID transaction; any partial failure initiates a full rollback.
 5. **No Self-Transfers:** An account cannot transfer money to itself.
+

@@ -94,3 +94,4 @@ jobs:
             docker compose ps
             curl -f http://localhost:8000/health || exit 1
             echo "[+] Deployment to EC2 completed successfully!"
+

@@ -63,13 +63,18 @@ jobs:
             set -e
             echo "[*] Connected to EC2 instance: $(hostname)"
             
-            # Ensure repository exists
-            if [ ! -d "TransactionLedger" ]; then
+            # Ensure repository exists (supports either AegisLedger or TransactionLedger directory)
+            REPO_DIR="AegisLedger"
+            if [ -d "TransactionLedger" ]; then
+              REPO_DIR="TransactionLedger"
+            elif [ ! -d "AegisLedger" ]; then
               echo "[*] Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git TransactionLedger
+              git clone https://github.com/${{ github.repository }}.git AegisLedger
+              REPO_DIR="AegisLedger"
             fi
             
-            cd TransactionLedger
+            cd "$REPO_DIR"
+            echo "[*] Working directory: $(pwd)"
             echo "[*] Pulling latest changes from main..."
             git fetch --all
             git reset --hard origin/main

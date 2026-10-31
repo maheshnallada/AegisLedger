@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, ArrowRight, Menu, X, Terminal, Cpu } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Menu, X, Terminal, Cpu, ExternalLink } from 'lucide-react';
 import { api } from '../../services/api';
 
 export default function LandingNavbar({ onLaunchConsole }) {
@@ -18,6 +18,10 @@ export default function LandingNavbar({ onLaunchConsole }) {
     check();
   }, []);
 
+  const docsUrl = typeof window !== 'undefined'
+    ? `http://${window.location.hostname}:8000/docs`
+    : 'http://localhost:8000/docs';
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -29,15 +33,18 @@ export default function LandingNavbar({ onLaunchConsole }) {
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold text-base tracking-tight text-white font-sans">AegisLedger</span>
-              <span className="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                Core v1.0
+              <span className="text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                AWS + Supabase
               </span>
             </div>
           </div>
         </div>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center space-x-8 text-xs font-medium text-slate-400">
+        <nav className="hidden md:flex items-center space-x-7 text-xs font-medium text-slate-400">
+          <a href="#patterns" className="hover:text-slate-100 transition-colors">
+            Design Patterns
+          </a>
           <a href="#architecture" className="hover:text-slate-100 transition-colors">
             Architecture
           </a>
@@ -47,13 +54,19 @@ export default function LandingNavbar({ onLaunchConsole }) {
           <a href="#api" className="hover:text-slate-100 transition-colors">
             API Sandbox
           </a>
-          <a href="#concurrency" className="hover:text-slate-100 transition-colors">
-            Concurrency & Locking
+          <a
+            href={docsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-sky-300 transition-colors flex items-center space-x-1"
+          >
+            <span>Swagger Docs</span>
+            <ExternalLink className="h-3 w-3" />
           </a>
         </nav>
 
         {/* Right CTA & Health Pill */}
-        <div className="hidden sm:flex items-center space-x-4">
+        <div className="hidden sm:flex items-center space-x-3.5">
           <div className="flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px]">
             <span className="relative flex h-2 w-2">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -64,7 +77,7 @@ export default function LandingNavbar({ onLaunchConsole }) {
               }`} />
             </span>
             <span className="text-slate-300 font-mono capitalize">
-              {health.status === 'healthy' ? 'API Online' : 'Offline'}
+              {health.status === 'healthy' ? 'API Online' : 'Connecting...'}
             </span>
           </div>
 
@@ -90,6 +103,13 @@ export default function LandingNavbar({ onLaunchConsole }) {
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-slate-800 bg-slate-950 px-4 py-4 space-y-3 text-xs">
           <a
+            href="#patterns"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-slate-300 py-1"
+          >
+            Design Patterns
+          </a>
+          <a
             href="#architecture"
             onClick={() => setMobileMenuOpen(false)}
             className="block text-slate-300 py-1"
@@ -110,16 +130,24 @@ export default function LandingNavbar({ onLaunchConsole }) {
           >
             API Sandbox
           </a>
-          <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
+          <a
+            href={docsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block text-sky-400 py-1"
+          >
+            Swagger API Docs ↗
+          </a>
+          <div className="pt-2 border-t border-slate-800">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onLaunchConsole();
               }}
-              className="w-full py-2.5 rounded-xl bg-sky-500 text-white font-medium text-center flex items-center justify-center space-x-2"
+              className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium text-xs flex items-center justify-center space-x-1.5"
             >
-              <span>Launch Live Console</span>
-              <ArrowRight className="h-4 w-4" />
+              <span>Launch Console</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -127,4 +155,3 @@ export default function LandingNavbar({ onLaunchConsole }) {
     </header>
   );
 }
-

@@ -9,6 +9,7 @@ import AuditModal from './components/AuditModal';
 // Landing Page Components
 import LandingNavbar from './components/landing/LandingNavbar';
 import HeroSection from './components/landing/HeroSection';
+import DesignPatternsSection from './components/landing/DesignPatternsSection';
 import ArchitectureSection from './components/landing/ArchitectureSection';
 import BentoFeatures from './components/landing/BentoFeatures';
 import ApiPlayground from './components/landing/ApiPlayground';
@@ -161,6 +162,7 @@ export default function App() {
         <LandingNavbar onLaunchConsole={() => setView('console')} />
         <main className="flex-1">
           <HeroSection onLaunchConsole={() => setView('console')} />
+          <DesignPatternsSection />
           <ArchitectureSection />
           <BentoFeatures />
           <ApiPlayground />

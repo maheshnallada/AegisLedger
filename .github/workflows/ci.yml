@@ -100,3 +100,4 @@ jobs:
           file: ./frontend/Dockerfile
           push: false
           tags: aegis-ledger-frontend:ci-test
+

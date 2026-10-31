@@ -177,3 +177,4 @@ Create an IAM User in AWS (e.g. `github-actions-aegis-ledger`) and attach the fo
 
 3. **Manual Trigger (`workflow_dispatch`):**
    - You can also run deployments manually from the **Actions** tab in GitHub at any time, with an option to skip the database migration step if desired.
+

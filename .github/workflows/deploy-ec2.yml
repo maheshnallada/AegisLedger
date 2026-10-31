@@ -83,15 +83,28 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             EOF
             
+            # Detect docker compose command (supports both plugin and standalone)
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE_CMD="docker compose"
+            elif docker-compose version >/dev/null 2>&1; then
+              COMPOSE_CMD="docker-compose"
+            else
+              echo "Installing docker-compose-plugin..."
+              sudo apt update && sudo apt install -y docker-compose-plugin || sudo apt install -y docker-compose
+              COMPOSE_CMD="docker compose"
+            fi
+            
+            echo "[*] Using compose command: $COMPOSE_CMD"
+            
             # Rebuild and restart containers
             echo "[*] Launching containers via Docker Compose..."
-            docker compose down
-            docker compose up -d --build
+            $COMPOSE_CMD down
+            $COMPOSE_CMD up -d --build
             
             # Wait for health check
             echo "[*] Verifying container health..."
             sleep 5
-            docker compose ps
+            $COMPOSE_CMD ps
             curl -f http://localhost:8000/health || exit 1
             echo "[+] Deployment to EC2 completed successfully!"
 

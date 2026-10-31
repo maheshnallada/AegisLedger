@@ -105,10 +105,29 @@ jobs:
             $COMPOSE_CMD down
             $COMPOSE_CMD up -d --build
             
-            # Wait for health check
-            echo "[*] Verifying container health..."
-            sleep 5
+            # Wait for health check with retries (up to 30s for database pool handshake)
+            echo "[*] Waiting for backend to become healthy..."
+            HEALTHY=false
+            for i in $(seq 1 15); do
+              echo "Health check probe $i of 15..."
+              if curl -s -f http://localhost:8000/health >/dev/null 2>&1; then
+                HEALTHY=true
+                break
+              fi
+              sleep 2
+            done
+
             $COMPOSE_CMD ps
-            curl -f http://localhost:8000/health || exit 1
-            echo "[+] Deployment to EC2 completed successfully!"
+
+            if [ "$HEALTHY" = "true" ]; then
+              echo "[+] Health check passed: API is responding on http://localhost:8000/health"
+              curl -s http://localhost:8000/health
+              echo ""
+              echo "[+] Deployment to EC2 completed successfully!"
+            else
+              echo "[-] Backend health check failed after 30 seconds."
+              echo "[*] Container logs:"
+              $COMPOSE_CMD logs --tail=50 backend
+              exit 1
+            fi
 

@@ -1,5 +1,10 @@
 import os
 import sys
+
+# Force local test SQLite database for test suite isolation
+os.environ["DATABASE_URL"] = "sqlite:///./test_aegis.db"
+os.environ["TESTING"] = "true"
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

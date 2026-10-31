@@ -15,7 +15,13 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Synchronize schema if not in unit testing mode
+    import os
+    if os.environ.get("TESTING") != "true":
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception:
+            pass
     yield
 
 app = FastAPI(

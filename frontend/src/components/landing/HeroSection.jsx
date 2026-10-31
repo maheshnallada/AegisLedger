@@ -88,7 +88,7 @@ export default function HeroSection({ onLaunchConsole }) {
 
           {/* Subtitle */}
           <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Engineered with pessimistic row locking, deadlock-free transfers ($\min(\text{ID}_A, \text{ID}_B)$), idempotency deduplication, and on-demand mathematical balance reconciliation.
+            Engineered with pessimistic row locking, deadlock-free transfers (min(Account A, Account B) lock ordering), idempotency deduplication, and on-demand mathematical balance reconciliation.
           </p>
 
           {/* Primary Action Buttons */}

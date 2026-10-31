@@ -2,6 +2,8 @@
 
 This guide provides end-to-end instructions for deploying the **AegisLedger** system using **Supabase** (Managed PostgreSQL) as the persistent database and **AWS** for cloud hosting, matching the requirements of the Full Stack Group Interview Assessment.
 
+> **Automated Deployments:** If you want zero-touch automated deployments on every `git push` via GitHub Actions, see the companion guide: [**`CI_CD_GITHUB_ACTIONS.md`**](./CI_CD_GITHUB_ACTIONS.md).
+
 ---
 
 ## 1. High-Level Production Architecture
@@ -283,3 +285,4 @@ Inspect the account in your **Supabase Dashboard** under `Table Editor` -> `acco
 | **Security** | SSL Mode Required | `sslmode=require` encrypts all database traffic in transit to Supabase. |
 | **Connection Pooling** | PgBouncer port 6543 | Handles serverless connection scaling without exhausting Postgres connections. |
 | **Disaster Recovery** | Supabase automated backups | Daily point-in-time recovery and snapshot support. |
+

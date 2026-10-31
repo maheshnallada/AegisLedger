@@ -253,4 +253,16 @@ AegisLedger is engineered for production deployment using **Supabase (Managed Po
 For complete step-by-step instructions on deploying the backend on **AWS App Runner** or **AWS EC2**, and hosting the frontend on **AWS Amplify** or **S3 + CloudFront**, see:
 👉 [**AWS & Supabase Deployment Guide (`AWS_DEPLOYMENT_GUIDE.md`)**](./AWS_DEPLOYMENT_GUIDE.md)
 
+---
+
+## 8. Continuous Integration & Continuous Deployment (GitHub Actions)
+
+AegisLedger includes a production-grade CI/CD pipeline built on **GitHub Actions**:
+- **CI Pipeline (`.github/workflows/ci.yml`)**: Automatically triggers on PRs and pushes to validate Python 3.12 dependencies, run 36 unit and concurrency tests, build the Vite production bundle, and smoke-test Docker builds.
+- **CD Pipeline (`.github/workflows/deploy-aws.yml`)**: On merge to `main`, automatically migrates the Supabase database schema, builds and tags multi-stage Docker images to Amazon ECR, rolls out zero-downtime updates on AWS App Runner, and syncs the static frontend to S3 and CloudFront CDN.
+
+Detailed setup instructions, required GitHub Secrets, and least-privilege IAM policies are available at:
+👉 [**GitHub Actions CI/CD Guide (`CI_CD_GITHUB_ACTIONS.md`)**](./CI_CD_GITHUB_ACTIONS.md)
+
+
 

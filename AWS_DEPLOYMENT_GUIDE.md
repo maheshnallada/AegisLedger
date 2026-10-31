@@ -127,7 +127,7 @@ docker push <AWS_ACCOUNT_ID>.dkr.ecr.<YOUR_AWS_REGION>.amazonaws.com/aegis-ledge
 5. Under **Deployment settings**, choose **Automatic** or **Manual**.
 6. **Configure service**:
    - Service name: `aegis-ledger-api`
-   - CPU: `1 vCPU`, Memory: `2 GB`
+   - CPU: `1 vCPU`, Memory: `8 GB`
    - Port: `8000`
    - Environment variables:
      - `DATABASE_URL`: `postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require`

@@ -6,24 +6,30 @@ from backend.app.config import get_settings
 
 settings = get_settings()
 
-connect_args = {}
-if "sqlite" in settings.DATABASE_URL:
-    connect_args["check_same_thread"] = False
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "echo": settings.DEBUG
+}
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-    echo=settings.DEBUG
-)
+if "sqlite" in settings.DATABASE_URL:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # PostgreSQL / Supabase pool configuration
+    engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
+    engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+    engine_kwargs["pool_recycle"] = settings.DB_POOL_RECYCLE
+
+engine = create_engine(settings.DATABASE_URL, **engine_kwargs)
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Enforce foreign key integrity on all SQLite connections."""
+    """Enforce foreign key integrity on SQLite connections."""
     try:
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+        # Only execute PRAGMA on sqlite connections
+        if hasattr(dbapi_connection, "cursor") and "sqlite" in str(type(dbapi_connection)).lower():
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
     except Exception:
         pass
 

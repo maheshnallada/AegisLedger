@@ -233,3 +233,24 @@ Every error returns a consistent envelope:
 4. **Atomic Transfers:** Money transfers debit source and credit destination as a single ACID transaction; any partial failure initiates a full rollback.
 5. **No Self-Transfers:** An account cannot transfer money to itself.
 
+---
+
+## 7. Production Database (Supabase) & Cloud Deployment (AWS)
+
+AegisLedger is engineered for production deployment using **Supabase (Managed PostgreSQL)** and **AWS** (App Runner, ECS, or EC2 with Docker).
+
+### Quick Supabase Setup
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Set `DATABASE_URL` in your `.env` or cloud container environment variables:
+   ```bash
+   DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+   ```
+3. Initialize the database schema:
+   - **CLI Auto-Sync:** `python backend/init_db.py`
+   - **Supabase SQL Editor:** Paste and run [`supabase_schema.sql`](./supabase_schema.sql).
+
+### AWS Deployment Guide
+For complete step-by-step instructions on deploying the backend on **AWS App Runner** or **AWS EC2**, and hosting the frontend on **AWS Amplify** or **S3 + CloudFront**, see:
+👉 [**AWS & Supabase Deployment Guide (`AWS_DEPLOYMENT_GUIDE.md`)**](./AWS_DEPLOYMENT_GUIDE.md)
+
+
